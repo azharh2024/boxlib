@@ -194,12 +194,15 @@ def iou(box1: np.ndarray, box2: np.ndarray) -> float:
 
     Returns:
         The Intersection over Union (IoU) of the two bounding boxes as a float.
+        If the union has zero area (both boxes are degenerate), 0.0 is returned.
     """
-    box1 = np.asarray(box1, np.float32)
-    box2 = np.asarray(box2, np.float32)
+    box1 = np.asarray(box1, np.float64)
+    box2 = np.asarray(box2, np.float64)
 
     intersection_area = area(intersection(box1, box2))
     union_area = area(box1) + area(box2) - intersection_area
+    if union_area <= 0:
+        return 0.0
     return intersection_area / union_area
 
 
@@ -222,14 +225,20 @@ def giou(box1: np.ndarray, box2: np.ndarray) -> float:
 
     Returns:
         The Generalized Intersection over Union (GIoU) of the two bounding boxes as a float.
+        Degenerate cases are handled without division by zero: a zero-area union contributes
+        an IoU term of 0.0, and a zero-area hull (both boxes degenerate at the same point)
+        contributes a hull term of 0.0.
     """
 
-    box1 = np.asarray(box1, np.float32)
-    box2 = np.asarray(box2, np.float32)
+    box1 = np.asarray(box1, np.float64)
+    box2 = np.asarray(box2, np.float64)
     full_box = box_hull(box1, box2)
     intersection_area = area(intersection(box1, box2))
     union_area = area(box1) + area(box2) - intersection_area
-    return intersection_area / union_area + union_area / area(full_box) - 1
+    hull_area = area(full_box)
+    iou_term = intersection_area / union_area if union_area > 0 else 0.0
+    hull_term = union_area / hull_area - 1 if hull_area > 0 else 0.0
+    return iou_term + hull_term
 
 
 def contains(box: np.ndarray, points: np.ndarray) -> np.ndarray[bool]:
@@ -258,7 +267,7 @@ def area(box: np.ndarray) -> float:
     Returns:
         The area of the bounding box as a float.
     """
-    return box[2] * box[3]
+    return float(box[2]) * float(box[3])
 
 
 def bb_of_points(points: np.ndarray) -> np.ndarray:

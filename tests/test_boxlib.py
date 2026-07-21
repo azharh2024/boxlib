@@ -139,6 +139,16 @@ class TestIou:
         # intersection: 50x100=5000, union: 10000+10000-5000=15000
         assert boxlib.iou(box1, box2) == pytest.approx(5000 / 15000)
 
+    def test_degenerate_boxes(self):
+        assert boxlib.iou(np.array([0, 0, 0, 0]), np.array([5, 5, 0, 0])) == 0.0
+
+    def test_large_coordinates(self):
+        # coordinates beyond 2**24 are not exactly representable in float32
+        box1 = np.array([16777216, 0, 3, 3])
+        box2 = np.array([16777217, 0, 3, 3])
+        # intersection: 2x3=6, union: 9+9-6=12
+        assert boxlib.iou(box1, box2) == pytest.approx(6 / 12)
+
 
 class TestGiou:
     def test_identical(self):
@@ -150,6 +160,14 @@ class TestGiou:
         box2 = np.array([10, 0, 10, 10])
         # IoU=0, union=200, hull=200, so GIoU = 0 + 200/200 - 1 = 0
         assert boxlib.giou(box1, box2) == pytest.approx(0.0)
+
+    def test_degenerate_same_point(self):
+        box = np.array([1, 1, 0, 0])
+        assert boxlib.giou(box, box) == 0.0
+
+    def test_degenerate_apart(self):
+        # degenerate boxes far apart: GIoU approaches its minimum of -1
+        assert boxlib.giou(np.array([0, 0, 0, 0]), np.array([5, 5, 0, 0])) == pytest.approx(-1.0)
 
 
 class TestContains:
@@ -174,6 +192,11 @@ class TestArea:
     def test_zero(self):
         box = np.array([10, 20, 0, 0])
         assert boxlib.area(box) == 0
+
+    def test_large_int_box(self):
+        # would overflow if computed in int32
+        box = np.array([0, 0, 60000, 60000], np.int32)
+        assert boxlib.area(box) == 3600000000
 
 
 class TestBbOfPoints:
