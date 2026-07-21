@@ -245,11 +245,38 @@ class TestCropImage:
         assert result[3, 3, 0] == 1  # original region
 
     def test_no_padding(self):
-        # pad=False clips start coords to 0 but keeps requested size if available
+        # pad=False returns only the part of the box that lies within the image
         image = np.ones((10, 10, 3))
         box = np.array([-2, -2, 6, 6])
         result = boxlib.crop_image(image, box, pad=False)
-        assert result.shape == (6, 6, 3)
+        assert result.shape == (4, 4, 3)
+
+    def test_no_padding_is_view(self):
+        image = np.ones((10, 10, 3))
+        result = boxlib.crop_image(image, np.array([2, 2, 4, 4]), pad=False)
+        assert np.shares_memory(result, image)
+
+    def test_box_entirely_outside(self):
+        image = np.ones((10, 100, 3))
+        for box in ([-10, 0, 5, 5], [150, 0, 5, 5], [0, -20, 5, 5], [0, 30, 5, 5]):
+            result = boxlib.crop_image(image, np.array(box))
+            assert result.shape == (5, 5, 3)
+            assert np.all(result == 0)
+
+    def test_grayscale(self):
+        image = np.ones((10, 10))
+        result = boxlib.crop_image(image, np.array([-2, -2, 6, 6]))
+        assert result.shape == (6, 6)
+        assert result[0, 0] == 0
+        assert result[3, 3] == 1
+
+    def test_half_pixel_rounds_up(self):
+        image = np.arange(100).reshape(10, 10, 1)
+        result = boxlib.crop_image(image, np.array([2.5, 2.5, 4, 4]))
+        assert result.shape == (4, 4, 1)
+        assert result[0, 0, 0] == image[3, 3, 0]
+        result = boxlib.crop_image(image, np.array([3.5, 3.5, 4, 4]))
+        assert result[0, 0, 0] == image[4, 4, 0]
 
 
 class TestRandomPartialSubbox:

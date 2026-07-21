@@ -393,40 +393,29 @@ def crop_image(image: np.ndarray, box: np.ndarray, pad: bool = True, pad_value=0
     """Crop (and possibly pad) an image to a bounding box.
 
     Args:
-        image: The image as a numpy array of shape (H, W, C).
+        image: The image as a numpy array of shape (H, W) or (H, W, C).
         box: The bounding box as a numpy array of shape (4,), [x1, y1, width, height].
-        pad: Whether to pad the image if the box goes outside the image boundaries.
+        pad: Whether to pad the image where the box extends beyond the image boundaries. If
+            False, the crop is restricted to the part of the box that lies within the image,
+            so the result may be smaller than the box.
         pad_value: The value to pad the image with.
 
     Returns:
-        The cropped (and possibly padded) image.
+        The cropped (and possibly padded) image. If ``pad`` is False, the result is a view
+        into the input image.
     """
-    intbox = np.round(np.asarray(box)).astype(np.int32)
+    intbox = np.floor(np.asarray(box, np.float64) + 0.5).astype(np.int64)
+    x1, y1 = intbox[:2]
+    x2, y2 = intbox[:2] + np.maximum(intbox[2:4], 0)
+    height, width = image.shape[:2]
+    cx1 = min(max(x1, 0), width)
+    cx2 = min(max(x2, 0), width)
+    cy1 = min(max(y1, 0), height)
+    cy2 = min(max(y2, 0), height)
 
-    # check if start is negative or the end goes beyond the imshape. If so, then pad
-    paddings = [[0, 0], [0, 0], [0, 0]]
-    if pad:
-        if intbox[0] < 0:
-            paddings[1][0] = np.abs(intbox[0])
-            intbox[2] += intbox[0]
-            intbox[0] = 0
-        if intbox[1] < 0:
-            paddings[0][0] = np.abs(intbox[1])
-            intbox[3] += intbox[1]
-            intbox[1] = 0
-        if intbox[0] + intbox[2] > image.shape[1]:
-            paddings[1][1] = intbox[0] + intbox[2] - image.shape[1]
-            intbox[2] = image.shape[1] - intbox[0]
-        if intbox[1] + intbox[3] > image.shape[0]:
-            paddings[0][1] = intbox[1] + intbox[3] - image.shape[0]
-            intbox[3] = image.shape[0] - intbox[1]
-    else:
-        intbox[0] = np.maximum(0, intbox[0])
-        intbox[1] = np.maximum(0, intbox[1])
-        intbox[2] = np.minimum(image.shape[1] - intbox[0], intbox[2])
-        intbox[3] = np.minimum(image.shape[0] - intbox[1], intbox[3])
+    if not pad:
+        return image[cy1:cy2, cx1:cx2]
 
-    cropped = image[intbox[1] : intbox[1] + intbox[3], intbox[0] : intbox[0] + intbox[2]]
-    if pad:
-        cropped = np.pad(cropped, paddings, mode="constant", constant_values=pad_value)
-    return cropped
+    result = np.full((y2 - y1, x2 - x1) + image.shape[2:], pad_value, dtype=image.dtype)
+    result[cy1 - y1 : cy2 - y1, cx1 - x1 : cx2 - x1] = image[cy1:cy2, cx1:cx2]
+    return result
