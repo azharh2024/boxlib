@@ -197,6 +197,10 @@ class TestContains:
         result = boxlib.contains(box, points)
         npt.assert_array_equal(result, [False, False, False])
 
+    def test_list_box(self):
+        result = boxlib.contains([0, 0, 10, 10], np.array([[5, 5], [15, 5]]))
+        npt.assert_array_equal(result, [True, False])
+
 
 class TestArea:
     def test_basic(self):
@@ -238,6 +242,12 @@ class TestFull:
     def test_from_imsize(self):
         result = boxlib.full(imsize=(640, 480))
         npt.assert_array_equal(result, [0, 0, 640, 480])
+
+    def test_requires_exactly_one_argument(self):
+        with pytest.raises(ValueError):
+            boxlib.full()
+        with pytest.raises(ValueError):
+            boxlib.full(imshape=(480, 640), imsize=(640, 480))
 
 
 class TestEmpty:

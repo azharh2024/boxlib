@@ -89,7 +89,7 @@ def intersection(box: np.ndarray, other_box: np.ndarray) -> np.ndarray:
     Returns:
         The intersection of the two bounding boxes as a numpy array of \
             shape (4,), [x1, y1, width, height]. If the boxes do not intersect, \
-            the returned box will have zero width and height.
+            at least one of the returned width and height will be zero.
     """
     topleft = np.maximum(box[:2], other_box[:2])
     bottomright = np.minimum(box[:2] + box[2:4], other_box[:2] + other_box[2:4])
@@ -241,7 +241,7 @@ def giou(box1: np.ndarray, box2: np.ndarray) -> float:
     return iou_term + hull_term
 
 
-def contains(box: np.ndarray, points: np.ndarray) -> np.ndarray[bool]:
+def contains(box: np.ndarray, points: np.ndarray) -> np.ndarray:
     """Check if a set of points are contained within a bounding box.
 
     Args:
@@ -250,11 +250,13 @@ def contains(box: np.ndarray, points: np.ndarray) -> np.ndarray[bool]:
 
     Returns:
         A boolean numpy array of shape (N,), indicating if each point is contained within the \
-            bounding box.
+            bounding box. The interval is half-open: a point on the top or left edge is \
+            contained, one on the bottom or right edge is not.
     """
-    start = np.asarray(box[:2])
-    end = np.asarray(box[:2] + box[2:4])
+    box = np.asarray(box)
     points = np.asarray(points)
+    start = box[:2]
+    end = box[:2] + box[2:4]
     return np.all(np.logical_and(start <= points, points < end), axis=-1)
 
 
@@ -271,7 +273,7 @@ def area(box: np.ndarray) -> float:
 
 
 def bb_of_points(points: np.ndarray) -> np.ndarray:
-    """Construct the smmallest bounding box that contains a set of points.
+    """Construct the smallest bounding box that contains a set of points.
 
     Args:
         points: The points as a numpy array of shape (N, 2), [[x1, y1], [x2, y2], ...].
@@ -308,13 +310,16 @@ def full(imshape=None, imsize=None) -> np.ndarray:
         The bounding box that covers the full image as a numpy array of shape (4,), \
             [x1, y1, width, height].
 
-    Note:
-        Exactly one of ``imshape`` or ``imsize`` must be provided.
+    Raises:
+        ValueError: If not exactly one of ``imshape`` or ``imsize`` is provided.
     """
-    assert imshape is not None or imsize is not None
     if imshape is None:
+        if imsize is None:
+            raise ValueError('Exactly one of imshape or imsize must be provided.')
         imshape = [imsize[1], imsize[0]]
-    return np.asarray([0, 0, imshape[1], imshape[0]])
+    elif imsize is not None:
+        raise ValueError('Exactly one of imshape or imsize must be provided.')
+    return np.asarray([0, 0, imshape[1], imshape[0]], np.float32)
 
 
 def empty() -> np.ndarray:
