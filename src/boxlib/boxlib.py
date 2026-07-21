@@ -327,9 +327,20 @@ def empty() -> np.ndarray:
 
 
 def intersection_vertical(box, other_box):
+    """Intersect two boxes along the vertical (y) axis, keeping the x extent of the first box.
+
+    Args:
+        box: The first bounding box as a numpy array of shape (4,), [x1, y1, width, height].
+        other_box: The second bounding box as a numpy array of shape (4,), [x1, y1, width, height].
+
+    Returns:
+        A bounding box with the x position and width of ``box`` and the vertical range shared \
+            by both boxes, as a numpy array of shape (4,), [x1, y1, width, height]. If the \
+            boxes do not overlap vertically, the returned box will have zero height.
+    """
     top = np.maximum(box[1], other_box[1])
     bottom = np.minimum(box[1] + box[3], other_box[1] + other_box[3])
-    return np.array([box[0], top, box[2], bottom - top])
+    return np.array([box[0], top, box[2], np.maximum(0, bottom - top)])
 
 
 def random_partial_box(random_state: np.random.RandomState) -> np.ndarray:

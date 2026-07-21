@@ -170,6 +170,20 @@ class TestGiou:
         assert boxlib.giou(np.array([0, 0, 0, 0]), np.array([5, 5, 0, 0])) == pytest.approx(-1.0)
 
 
+class TestIntersectionVertical:
+    def test_overlap(self):
+        box1 = np.array([0, 0, 10, 10])
+        box2 = np.array([100, 5, 10, 10])
+        result = boxlib.intersection_vertical(box1, box2)
+        npt.assert_array_equal(result, [0, 5, 10, 5])
+
+    def test_disjoint(self):
+        box1 = np.array([0, 0, 10, 10])
+        box2 = np.array([0, 50, 10, 10])
+        result = boxlib.intersection_vertical(box1, box2)
+        assert result[3] == 0
+
+
 class TestContains:
     def test_inside(self):
         box = np.array([0, 0, 100, 100])
