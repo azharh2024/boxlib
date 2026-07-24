@@ -46,9 +46,9 @@ docs = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/isarandi/boxlib"
-Repository = "https://github.com/isarandi/boxlib"
-Issues = "https://github.com/isarandi/boxlib/issues"
+Homepage = "https://github.com/azharh2024/boxlib"
+Repository = "https://github.com/azharh2024/boxlib"
+Issues = "https://github.com/azharh2024/boxlib/issues"
 Author = "https://istvansarandi.com"
 
 [tool.setuptools_scm]
